@@ -49,7 +49,17 @@ def main():
     ap.add_argument("--out", default=sc.WALLPAPER_DIR, help="输出目录(all 模式)")
     ap.add_argument("--size", type=parse_size, default=None, help="尺寸, 如 1920x1080 (默认取屏幕分辨率)")
     ap.add_argument("--minutes", type=int, default=30, help="cycle 模式的间隔分钟数")
+    ap.add_argument("--anchor", choices=["top", "center", "bottom"], default=None,
+                    help="拼贴垂直位置(仅 grid 模式): 默认 top, 避开任务栏与桌面图标区")
+    ap.add_argument("--pad-bottom", default=None,
+                    help="底部预留比例(仅 grid/top): 0~1 小数或百分数, 如 0.15 或 15")
     args = ap.parse_args()
+
+    # 命令行参数 -> 环境变量(compose_grid 只读环境变量, 这样不必改各套件接口)
+    if args.anchor:
+        os.environ["DEEPSKIN_GRID_ANCHOR"] = args.anchor
+    if args.pad_bottom:
+        os.environ["DEEPSKIN_GRID_PAD_BOTTOM"] = str(args.pad_bottom)
 
     if args.mode in ("1", "2", "3", "4") and int(args.mode) > len(sc.IMAGE_FILES):
         print("[deepskin] 该套件只有 %d 张素材, 单图请用 1-%d。" % (len(sc.IMAGE_FILES), len(sc.IMAGE_FILES)))

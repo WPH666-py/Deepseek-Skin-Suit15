@@ -26,6 +26,10 @@ IMAGE_NAMES = [
 GRID_COLS = 2
 GRID_ROWS = 2
 GRID_SINGLE = False
+# 拼贴垂直锚点: top(默认, 避开任务栏/图标区) / center / bottom
+GRID_ANCHOR = "top"
+# 底部预留: "auto"(top 时约 11%) 或 0~1 比例 / 百分数
+GRID_BOTTOM_RESERVE = "auto"
 # 可切换的壁纸模式: ("grid" | "single1".., 显示名)
 MODES = [("grid", "2×2 拼贴(默认)")] + [
     ("single%d" % (i + 1), IMAGE_NAMES[i]) for i in range(len(IMAGE_FILES))
@@ -138,10 +142,37 @@ def _avg_source_aspect():
     return (s / n) if n else 1.0
 
 
+def _resolve_anchor():
+    """网格垂直锚点: top(默认) / center / bottom。
+
+    默认居中时, 2×2 拼贴几乎占满屏高, 底部会压到任务栏与桌面图标区 —— 左下那张
+    卡片容易被图标埋掉。默认改成 top: 把整块放进安全区, 底部留白。
+    可用环境变量 DEEPSKIN_GRID_ANCHOR 覆盖, 或用 wallpaper.py --anchor。
+    """
+    a = (os.environ.get("DEEPSKIN_GRID_ANCHOR") or globals().get("GRID_ANCHOR") or "top")
+    a = str(a).strip().lower()
+    return a if a in ("top", "center", "bottom") else "top"
+
+
+def _resolve_bottom_reserve(anchor):
+    """底部预留比例(仅 top 锚点用): 任务栏 + 图标区的高度占比。"""
+    raw = os.environ.get("DEEPSKIN_GRID_PAD_BOTTOM")
+    if raw is None:
+        raw = globals().get("GRID_BOTTOM_RESERVE", "auto")
+    if str(raw).strip().lower() == "auto":
+        return 0.11 if anchor == "top" else 0.0
+    try:
+        v = float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+    return v / 100.0 if v > 1 else v
+
+
 def compose_grid(size=(3840, 2160), cols=None, rows=None, cell_aspect=None):
-    """紧贴式拼贴壁纸: 卡片细缝相挨、整块居中(支持 1×2 / 2×2 …)。
+    """紧贴式拼贴壁纸: 卡片细缝相挨(支持 1×2 / 2×2 …)。
     cols/rows/cell_aspect 缺省取自 GRID_COLS/GRID_ROWS 与素材平均比例。
-    缝隙/外边距比例可用环境变量 DEEPSKIN_GRID_GAP 调整(百分比, 默认 1.5)。"""
+    垂直位置由 GRID_ANCHOR 决定(默认 top, 避开任务栏/图标区);
+    缝隙比例可用环境变量 DEEPSKIN_GRID_GAP 调整(百分比, 默认 1.5)。"""
     ensure_pillow()
     from PIL import Image
 
@@ -161,7 +192,20 @@ def compose_grid(size=(3840, 2160), cols=None, rows=None, cell_aspect=None):
     m = min(W, H)
     pad = max(6, int(m * 0.015))  # 外圈边距
     gap = max(4, int(m * gap_pct / 100.0))  # 卡片之间细缝
-    th = (H - 2 * pad - (rows - 1) * gap) // rows  # 格子高(按整块高度填满)
+
+    anchor = _resolve_anchor()
+    reserve = int(H * _resolve_bottom_reserve(anchor))  # 底部安全区(仅 top)
+    H_avail = max(64, H - reserve)  # 网格可用高度
+
+    # 先按可用高度推格子高; 若整块因此变得过小(竖屏/超宽屏), 退回按屏高算并居中。
+    th = (H_avail - 2 * pad - (rows - 1) * gap) // rows
+    if th >= int(H * 0.35):
+        avail_h = H_avail
+    else:
+        avail_h = H
+        anchor = "center"
+        th = (H - 2 * pad - (rows - 1) * gap) // rows
+
     tw = int(th * cell_aspect)  # 格子宽(按素材比例)
     avail_w = (W - 2 * pad - (cols - 1) * gap) // cols
     if tw > avail_w:
@@ -171,7 +215,13 @@ def compose_grid(size=(3840, 2160), cols=None, rows=None, cell_aspect=None):
     total_w = cols * tw + (cols - 1) * gap
     total_h = rows * th + (rows - 1) * gap
     x0 = (W - total_w) // 2
-    y0 = (H - total_h) // 2
+    if anchor == "top":
+        y0 = pad
+    elif anchor == "bottom":
+        y0 = H - total_h - pad
+    else:
+        y0 = (avail_h - total_h) // 2
+    y0 = max(pad, min(y0, H - total_h - pad))
 
     base = _gradient(size).convert("RGBA")
     for i, f in enumerate(IMAGE_FILES):
