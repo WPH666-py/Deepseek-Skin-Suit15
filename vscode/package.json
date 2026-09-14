@@ -1,0 +1,100 @@
+{
+  "name": "deepskin-suit15",
+  "displayName": "DeepSkin Suit15 — 大肥鱼皮肤",
+  "description": "DeepSeek 蓝色大肥鱼皮肤套件14: 2x2 壁纸一键切换 · 桌面桌宠 · 多 IDE 皮肤素材",
+  "version": "0.1.0",
+  "publisher": "wp666",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WPH666-py/Deepseek-Skin-Suit15.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other",
+    "Themes"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "deepskin15.setGrid",
+        "title": "大肥鱼15: 2×2 拼贴壁纸"
+      },
+      {
+        "command": "deepskin15.setSingle1",
+        "title": "大肥鱼15: 你愿意和我…吗?"
+      },
+      {
+        "command": "deepskin15.setSingle2",
+        "title": "大肥鱼15: DeepSeek Hentai?"
+      },
+      {
+        "command": "deepskin15.setSingle3",
+        "title": "大肥鱼15: 大烧货吗?"
+      },
+      {
+        "command": "deepskin15.setSingle4",
+        "title": "大肥鱼15: 正在思考…"
+      },
+      {
+        "command": "deepskin15.setRandom",
+        "title": "大肥鱼15: 随机换一张"
+      },
+      {
+        "command": "deepskin15.openSwitcher",
+        "title": "大肥鱼15: 打开皮肤切换器"
+      },
+      {
+        "command": "deepskin15.startPet",
+        "title": "大肥鱼15: 启动桌宠"
+      },
+      {
+        "command": "deepskin15.openGallery",
+        "title": "大肥鱼15: 打开素材画廊"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "deepskin15",
+          "title": "大肥鱼15",
+          "icon": "media/deepskin.svg"
+        }
+      ]
+    },
+    "views": {
+      "deepskin15": [
+        {
+          "id": "deepskin15.gallery",
+          "name": "皮肤画廊",
+          "type": "webview"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "DeepSkin Suit15",
+      "properties": {
+        "deepskin15.repoPath": {
+          "type": "string",
+          "default": "",
+          "description": "皮肤套件14仓库路径(含 tools/wallpaper.py)。留空则自动检测 ~/.deepskin-suit15 或 %USERPROFILE%\\DeepSkin-Suit15。"
+        },
+        "deepskin15.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Python 解释器路径, 留空自动查找(需要 pip 已装 Pillow, 缺失时扩展会自动安装)。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "node -e \"console.log('no build step')\""
+  }
+}
